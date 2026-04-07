@@ -32,7 +32,7 @@ async function notifyIfHidden(order: Order) {
 
 export type RealtimeStatus = "connecting" | "connected" | "error";
 
-export function useKanbanOrders(initialOrders: Order[]) {
+export function useKanbanOrders(initialOrders: Order[], shopId: string) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
   const [realtimeStatus, setRealtimeStatus] =
@@ -53,7 +53,7 @@ export function useKanbanOrders(initialOrders: Order[]) {
       .channel("orders-realtime")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "orders" },
+        { event: "INSERT", schema: "public", table: "orders", filter: `shop_id=eq.${shopId}` },
         async (payload) => {
           const id = (payload.new as Order).id;
           const { data } = await supabase
@@ -86,7 +86,7 @@ export function useKanbanOrders(initialOrders: Order[]) {
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "orders" },
+        { event: "UPDATE", schema: "public", table: "orders", filter: `shop_id=eq.${shopId}` },
         async (payload) => {
           const id = (payload.new as Order).id;
           const { data } = await supabase
@@ -124,7 +124,7 @@ export function useKanbanOrders(initialOrders: Order[]) {
       supabase.removeChannel(channel);
       timeouts.forEach(clearTimeout);
     };
-  }, []);
+  }, [shopId]);
 
   function clearNewHighlight(id: string) {
     const t = timeoutsRef.current.get(id);

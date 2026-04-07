@@ -1,7 +1,15 @@
-import { LoginForm } from "@/features/auth/LoginForm";
+import { redirect } from "next/navigation";
 import { WashingMachine } from "lucide-react";
+import { getUser } from "@/features/auth/auth.actions";
+import { SetPasswordForm } from "@/features/auth/SetPasswordForm";
 
-export default function LoginPage() {
+export default async function SetPasswordPage() {
+  const user = await getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
@@ -12,10 +20,10 @@ export default function LoginPage() {
           <h1 className="text-2xl font-semibold text-gray-900">
             Laundry Buddy
           </h1>
-          <p className="text-sm text-gray-500">Sign in to your account</p>
+          <p className="text-sm text-gray-500">Set your password to continue</p>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <LoginForm />
+          <SetPasswordForm />
         </div>
       </div>
     </div>

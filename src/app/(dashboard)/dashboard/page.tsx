@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getUser } from '@/features/auth/auth.actions'
-import { getUserRole } from '@/lib/auth-utils'
+import { getUserRole, getUserShopId } from '@/lib/auth-utils'
 import { KanbanBoard } from '@/features/kanban/KanbanBoard'
 import type { Order } from '@/lib/types'
 
@@ -8,6 +8,7 @@ export default async function DashboardPage() {
   const [supabase, user] = await Promise.all([createClient(), getUser()])
 
   const userRole = getUserRole(user)
+  const shopId = getUserShopId(user) ?? ''
 
   const { data, error } = await supabase
     .from('orders')
@@ -23,5 +24,5 @@ export default async function DashboardPage() {
     )
   }
 
-  return <KanbanBoard initialOrders={(data as Order[]) ?? []} userRole={userRole} />
+  return <KanbanBoard initialOrders={(data as Order[]) ?? []} userRole={userRole} shopId={shopId} />
 }

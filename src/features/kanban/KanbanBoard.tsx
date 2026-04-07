@@ -26,11 +26,12 @@ import { WifiOff, Loader2 } from "lucide-react";
 interface KanbanBoardProps {
   initialOrders: Order[];
   userRole: UserRole;
+  shopId: string;
 }
 
-export function KanbanBoard({ initialOrders, userRole }: KanbanBoardProps) {
+export function KanbanBoard({ initialOrders, userRole, shopId }: KanbanBoardProps) {
   const { orders, setOrders, newOrderIds, clearNewHighlight, realtimeStatus } =
-    useKanbanOrders(initialOrders);
+    useKanbanOrders(initialOrders, shopId);
 
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
