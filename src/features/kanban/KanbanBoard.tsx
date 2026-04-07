@@ -77,6 +77,7 @@ export function KanbanBoard({ initialOrders, userRole, shopId }: KanbanBoardProp
     const order = orders.find((o) => o.id === orderId);
     if (!order || order.status === newStatus) return;
 
+    const previousStatus = order.status;
     startTransition(async () => {
       applyOptimistic({ id: orderId, status: newStatus });
       try {
@@ -85,6 +86,7 @@ export function KanbanBoard({ initialOrders, userRole, shopId }: KanbanBoardProp
           prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
         );
       } catch {
+        applyOptimistic({ id: orderId, status: previousStatus });
         toast.error("Failed to update order status. Please try again.");
       }
     });
