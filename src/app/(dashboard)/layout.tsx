@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@/features/auth/auth.actions'
-import { getUserRole } from '@/lib/auth-utils'
+import { getUserRole, getUserShopId, isOwner } from '@/lib/auth-utils'
 import { getShopBranding } from '@/features/settings/branding.actions'
 import { DashboardHeader } from '@/components/layout/DashboardHeader'
 import { SideNav } from '@/components/layout/SideNav'
@@ -17,6 +17,15 @@ export default async function DashboardLayout({
   }
 
   const role = getUserRole(user)
+
+  if (isOwner(user)) {
+    redirect('/owner')
+  }
+
+  const shopId = getUserShopId(user)
+  if (!shopId) {
+    redirect('/onboarding')
+  }
 
   const [branding] = await Promise.all([getShopBranding()])
 

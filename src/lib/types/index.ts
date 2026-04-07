@@ -7,6 +7,7 @@ export interface AdditionalCharge {
   id: string
   name: string
   amount: number
+  shop_id: string
   created_at: string
   updated_at: string
   deleted_at?: string | null
@@ -31,13 +32,27 @@ export interface Order {
   total_price: number | null
   notes: string | null
   status: OrderStatus
+  shop_id: string
   created_at: string
   updated_at: string
   deleted_at?: string | null
   order_charges?: OrderCharge[]
 }
 
+export interface Shop {
+  id: string
+  name: string
+  created_at: string
+}
+
 export interface ShopBranding {
   shop_name: string | null
   logo_url: string | null
+}
+
+export interface TeamMember {
+  id: string
+  email: string
+  role: string
+  created_at: string
 }

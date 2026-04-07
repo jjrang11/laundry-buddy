@@ -15,9 +15,10 @@ import { Loader2, Upload, X, ImageIcon } from "lucide-react";
 
 interface BrandingSettingsProps {
   initialBranding: ShopBranding;
+  shopId: string;
 }
 
-export function BrandingSettings({ initialBranding }: BrandingSettingsProps) {
+export function BrandingSettings({ initialBranding, shopId }: BrandingSettingsProps) {
   const router = useRouter();
 
   // Zone A — Shop Name
@@ -82,7 +83,7 @@ export function BrandingSettings({ initialBranding }: BrandingSettingsProps) {
       .toLowerCase()
       .replace(/[^a-z0-9.]/g, "-");
 
-    const path = `logos/${Date.now()}-${sanitizedFilename}`;
+    const path = `${shopId}/${Date.now()}-${sanitizedFilename}`;
 
     const { error: uploadError } = await supabase.storage
       .from("shop-assets")

@@ -1,85 +1,28 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
-function CardShell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-      {children}
-    </div>
-  )
-}
-
-function CardHeaderSkeleton() {
-  return (
-    <div className="flex items-center gap-3 p-4">
-      <Skeleton className="w-8 h-8 rounded-lg" />
-      <div className="space-y-1.5">
-        <Skeleton className="w-32 h-4" />
-        <Skeleton className="w-48 h-3" />
-      </div>
-    </div>
-  )
-}
-
-function HorizontalRule() {
-  return <div className="border-t border-gray-200" />
-}
-
-function PricingSettingsSkeleton() {
-  return (
-    <CardShell>
-      <CardHeaderSkeleton />
-      <HorizontalRule />
-      <div className="p-4 space-y-2">
-        <Skeleton className="w-28 h-3" />
-        <Skeleton className="w-36 h-9" />
-      </div>
-      <HorizontalRule />
-      <div className="flex items-center gap-3 p-4">
-        <Skeleton className="w-40 h-8" />
-        <Skeleton className="w-28 h-8" />
-      </div>
-    </CardShell>
-  )
-}
-
-function TableRowSkeleton() {
-  return (
-    <div className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 last:border-b-0">
-      <Skeleton className="w-1/3 h-4" />
-      <Skeleton className="w-20 h-4" />
-      <Skeleton className="w-16 h-4" />
-    </div>
-  )
-}
-
-function AdditionalChargesSkeleton() {
-  return (
-    <CardShell>
-      <CardHeaderSkeleton />
-      <HorizontalRule />
-      <div>
-        <TableRowSkeleton />
-        <TableRowSkeleton />
-        <TableRowSkeleton />
-      </div>
-      <HorizontalRule />
-      <div className="p-4">
-        <Skeleton className="w-full h-8 border border-dashed border-gray-200 bg-transparent" />
-      </div>
-    </CardShell>
-  )
-}
-
 export default function SettingsLoading() {
   return (
-    <div className="max-w-lg mx-auto px-4 py-8">
-      <div className="mb-6 space-y-1.5">
-        <Skeleton className="w-32 h-6" />
-        <Skeleton className="w-48 h-4" />
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="mb-8 space-y-2">
+        <Skeleton className="h-7 w-24" />
+        <Skeleton className="h-4 w-52" />
       </div>
-      <PricingSettingsSkeleton />
-      <div className="mt-6">
-        <AdditionalChargesSkeleton />
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div className="flex min-h-[500px]">
+          <div className="w-52 shrink-0 border-r border-gray-100 bg-gray-50/50 p-3 space-y-1">
+            <Skeleton className="h-9 w-full rounded-md" />
+            <Skeleton className="h-9 w-full rounded-md" />
+            <Skeleton className="h-9 w-full rounded-md" />
+          </div>
+          <div className="flex-1 p-8 space-y-4">
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-3 w-60" />
+            <div className="mt-6 space-y-3">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-8 w-48" />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

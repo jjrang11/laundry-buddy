@@ -9,7 +9,10 @@ import {
   formatCurrency,
   formatRelativeTime,
 } from "@/lib/utils";
-import { STATUS_COLORS } from "@/lib/constants/order-statuses";
+import {
+  ORDER_TYPE_COLORS,
+  STATUS_COLORS,
+} from "@/lib/constants/order-statuses";
 import type { Order, OrderType } from "@/lib/types";
 import type { OrderStatus } from "@/lib/constants/order-statuses";
 import { MapPin, Store, Weight, Tag } from "lucide-react";
@@ -75,7 +78,16 @@ export function KanbanCard({
       onClick={handleClick}
       role="button"
       tabIndex={overlay ? undefined : 0}
-      onKeyDown={overlay ? undefined : (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit(order) } }}
+      onKeyDown={
+        overlay
+          ? undefined
+          : (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onEdit(order);
+              }
+            }
+      }
       className={[
         "group relative bg-white rounded-lg border border-gray-200 border-l-4 p-3",
         "cursor-pointer select-none touch-none",
@@ -132,14 +144,14 @@ export function KanbanCard({
         <Badge
           className={[
             "text-xs px-1.5 py-0",
-            STATUS_COLORS[order.status] ?? "",
+            ORDER_TYPE_COLORS[order.order_type] ?? "",
           ].join(" ")}
           variant="outline"
         >
           {order.order_type === "pickup" ? "Pickup" : "Walk-in"}
         </Badge>
         <span className="text-xs text-gray-400 tabular-nums">
-          {relativeTime ?? ''}
+          {relativeTime ?? ""}
         </span>
       </div>
       {/* New order pulse dot */}

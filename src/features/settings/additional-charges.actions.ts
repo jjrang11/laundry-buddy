@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { getUserRole } from '@/lib/auth-utils'
+import { getUserRole, getUserShopId } from '@/lib/auth-utils'
 import type { AdditionalCharge } from '@/lib/types'
 
 export type ChargesActionState = { error: string } | { success: true } | null
@@ -27,6 +27,9 @@ export async function createAdditionalCharge(
   const role = getUserRole(user)
   if (role !== 'admin') return { error: 'Only admins can perform this action.' }
 
+  const shopId = getUserShopId(user)
+  if (!shopId) return { error: 'Not associated with a shop.' }
+
   const name = (formData.get('name') as string)?.trim()
   const raw = formData.get('amount') as string
   const amount = parseFloat(raw)
@@ -36,7 +39,7 @@ export async function createAdditionalCharge(
 
   const { error } = await supabase
     .from('additional_charges')
-    .insert({ name, amount })
+    .insert({ name, amount, shop_id: shopId })
 
   if (error) {
     console.error('[createAdditionalCharge]', error)

@@ -20,11 +20,11 @@ interface SideNavProps {
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/orders",    label: "Orders",    icon: ClipboardList },
+  { href: "/settings",  label: "Settings",  icon: Settings },
 ] as const;
 
 const ADMIN_NAV_ITEMS = [
   { href: "/reports", label: "Reports", icon: BarChart2 },
-  { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 export function SideNav({ role }: SideNavProps) {

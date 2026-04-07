@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { ORDER_STATUSES } from '@/lib/constants/order-statuses'
 import type { OrderStatus } from '@/lib/constants/order-statuses'
+import { getUserShopId } from '@/lib/auth-utils'
 
 export type OrderActionState = { error: string } | { success: true } | null
 
@@ -50,6 +51,9 @@ export async function createOrder(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized.' }
 
+  const shopId = getUserShopId(user)
+  if (!shopId) return { error: 'Not associated with a shop.' }
+
   const customerName = (formData.get('customer_name') as string)?.trim()
   const contactNumber = (formData.get('contact_number') as string)?.trim()
   const orderType = formData.get('order_type') as string
@@ -85,6 +89,7 @@ export async function createOrder(
       price_per_kg: pricePerKg,
       notes,
       status: orderType === 'walkin' ? 'Arrived at Shop' : 'New Order',
+      shop_id: shopId,
     })
     .select('id')
     .single()
