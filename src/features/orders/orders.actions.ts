@@ -39,6 +39,7 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
   }
   revalidatePath('/dashboard')
   revalidatePath('/orders')
+  revalidatePath('/delivery')
 }
 
 // ── Create ─────────────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ import {
   ClipboardList,
   BarChart2,
   Settings,
+  Truck,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -19,8 +20,9 @@ interface SideNavProps {
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/orders",    label: "Orders",    icon: ClipboardList },
-  { href: "/settings",  label: "Settings",  icon: Settings },
+  { href: "/delivery", label: "Delivery", icon: Truck },
+  { href: "/orders", label: "Orders", icon: ClipboardList },
+  { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 const ADMIN_NAV_ITEMS = [
