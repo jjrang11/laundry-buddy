@@ -36,14 +36,14 @@ function OrderCard({
   onAction: () => void
 }) {
   return (
-    <div className="relative bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex">
+    <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex">
       <div className={`w-1 shrink-0 ${accentClass}`} />
       <div className="flex-1 p-4 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
-          <p className="font-semibold text-gray-900 text-sm leading-tight">{order.customer_name}</p>
-          <p className="text-sm font-bold text-gray-800 shrink-0">{formatCurrency(order.total_price)}</p>
+          <p className="font-semibold text-slate-800 text-sm leading-tight">{order.customer_name}</p>
+          <p className="text-sm font-bold text-slate-800 shrink-0">{formatCurrency(order.total_price)}</p>
         </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
           {order.address && (
             <span className="flex items-center gap-1">
               <MapPin className="h-3 w-3" />
@@ -105,16 +105,16 @@ function Section({
       <div className="flex items-center gap-2 mb-4">
         <Icon className={`h-5 w-5 ${iconClass}`} />
         <div>
-          <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-          <p className="text-xs text-gray-400">{subtitle}</p>
+          <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
+          <p className="text-xs text-slate-400">{subtitle}</p>
         </div>
-        <span className="ml-auto text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+        <span className="ml-auto text-xs font-semibold bg-white border border-slate-200 text-slate-500 px-2 py-0.5 rounded-full shadow-sm">
           {orders.length}
         </span>
       </div>
 
       {orders.length === 0 ? (
-        <p className="text-sm text-gray-400 py-8 text-center border border-dashed border-gray-200 rounded-xl">
+        <p className="text-sm text-slate-400 py-8 text-center border border-dashed border-slate-200 rounded-xl">
           No orders here yet.
         </p>
       ) : (
@@ -230,8 +230,8 @@ export function DeliveryBoard({ readyOrders, outOrders, shopId }: DeliveryBoardP
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-10">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Delivery</h1>
-        <p className="text-sm text-gray-500 mt-1">Manage orders going out and confirm deliveries.</p>
+        <h1 className="text-2xl font-bold text-slate-900">Delivery</h1>
+        <p className="text-sm text-slate-500 mt-1">Manage orders going out and confirm deliveries.</p>
       </div>
 
       <Section
@@ -248,7 +248,7 @@ export function DeliveryBoard({ readyOrders, outOrders, shopId }: DeliveryBoardP
         onAction={handleAction}
       />
 
-      <hr className="border-gray-200" />
+      <hr className="border-slate-200" />
 
       <Section
         title="Out for Delivery"

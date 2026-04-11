@@ -4,15 +4,31 @@ export interface DailySummary {
   totalOrders: number
   pickupCount: number
   walkinCount: number
+  completedCount: number
+  avgOrderValue: number       // totalRevenue / completedCount (0 if none)
+  completionRate: number      // (completedCount / totalOrders) * 100 (0 if none)
 }
 
-export interface MonthlySummary {
-  month: string   // "YYYY-MM" e.g. "2026-03"
-  label: string   // Short label e.g. "Mar 2026"
-  totalRevenue: number
-  totalWeight: number
-  totalOrders: number
-  pickupCount: number
-  walkinCount: number
-  statusBreakdown: Record<string, number>
+export interface DayDataPoint {
+  date: string    // formatted label e.g. "Apr 1"
+  revenue: number
+  orders: number
+}
+
+export interface StatusDataPoint {
+  status: string
+  count: number
+}
+
+export interface OrderTypeDataPoint {
+  type: string    // "Pickup" | "Walk-in"
+  count: number
+  revenue: number
+}
+
+export interface ReportAnalytics {
+  summary: DailySummary
+  dailyTrend: DayDataPoint[]
+  statusDistribution: StatusDataPoint[]
+  orderTypeComparison: OrderTypeDataPoint[]
 }

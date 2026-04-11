@@ -40,7 +40,19 @@
       "Bash(cp -r \"C:/Users/MY PC/Documents/Personal/laundry-buddy/src/lib/constants\" \"C:/Users/MY PC/Documents/Personal/laundry-buddy/.claude/worktrees/agent-ac250780/src/lib/\")",
       "Bash(cp -r \"C:/Users/MY PC/Documents/Personal/laundry-buddy/src/lib/supabase\" \"C:/Users/MY PC/Documents/Personal/laundry-buddy/.claude/worktrees/agent-ac250780/src/lib/\")",
       "Bash(cp -r \"C:/Users/MY PC/Documents/Personal/laundry-buddy/src/lib/types\" \"C:/Users/MY PC/Documents/Personal/laundry-buddy/.claude/worktrees/agent-ac250780/src/lib/\")",
-      "Bash(git -C \"C:/Users/MY PC/Documents/Personal/laundry-buddy/.claude/worktrees/agent-a7f8b499\" status --short)"
+      "Bash(git -C \"C:/Users/MY PC/Documents/Personal/laundry-buddy/.claude/worktrees/agent-a7f8b499\" status --short)",
+      "Read(//c/Users/MY PC/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/.claude/skills/ui-ux-pro-max/**)",
+      "Bash(python scripts/search.py \"laundry service operations dashboard calm professional\" --design-system -p \"Laundry Buddy\" -f markdown)",
+      "Bash(python scripts/search.py \"service operations calm soothing\" --domain color -n 5)",
+      "Bash(python scripts/search.py \"professional calm minimal dashboard\" --domain style -n 3)",
+      "Bash(python scripts/search.py \"laundry service operations staff dashboard premium modern minimal cognitive load\" --design-system --persist -p \"Laundry Buddy\" -f markdown)",
+      "Bash(python scripts/search.py \"operational staff productivity dashboard modern premium\" --domain style -n 4 -f markdown)",
+      "Bash(python scripts/search.py \"modern premium saas productivity professional\" --domain color -n 4 -f markdown)",
+      "Bash(python scripts/search.py \"professional modern premium clean sans-serif\" --domain typography -n 3 -f markdown)",
+      "Bash(python scripts/search.py \"kanban board drag drop operational staff cognitive load\" --domain ux -n 5 -f markdown)",
+      "Bash(npm ls:*)",
+      "Bash(grep:*)",
+      "Bash(npx eslint:*)"
     ]
   }
 }

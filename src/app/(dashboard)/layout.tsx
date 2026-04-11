@@ -30,7 +30,7 @@ export default async function DashboardLayout({
   const [branding] = await Promise.all([getShopBranding()])
 
   return (
-    <div className="flex flex-col h-screen bg-[#f7f6f3] overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#F8FAFC] overflow-hidden">
       <DashboardHeader email={user.email ?? ''} role={role} branding={branding} />
       <div className="flex flex-1 overflow-hidden">
         <SideNav role={role} />

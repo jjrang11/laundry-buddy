@@ -1,105 +1,89 @@
-"use client";
+'use client'
 
-import { PhilippinePeso, ShoppingBag, Weight, Users } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { PhilippinePeso, ShoppingBag, Weight, CheckCircle2, TrendingUp, BarChart3 } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
+import type { DailySummary } from './reports.types'
 
 interface ReportSummaryCardsProps {
-  totalRevenue: number;
-  totalOrders: number;
-  totalWeight: number;
-  pickupCount: number;
-  walkinCount: number;
+  summary: DailySummary
 }
 
-export function ReportSummaryCards({
-  totalRevenue,
-  totalOrders,
-  totalWeight,
-  pickupCount,
-  walkinCount,
-}: ReportSummaryCardsProps) {
+export function ReportSummaryCards({ summary }: ReportSummaryCardsProps) {
+  const {
+    totalRevenue,
+    totalOrders,
+    totalWeight,
+    completedCount,
+    avgOrderValue,
+    completionRate,
+  } = summary
+
+  const cards = [
+    {
+      label: 'Revenue',
+      value: formatCurrency(totalRevenue),
+      icon: PhilippinePeso,
+      iconClass: 'bg-blue-50 text-blue-600',
+    },
+    {
+      label: 'Orders',
+      value: String(totalOrders),
+      icon: ShoppingBag,
+      iconClass: 'bg-blue-50 text-blue-600',
+    },
+    {
+      label: 'Completed',
+      value: String(completedCount),
+      icon: CheckCircle2,
+      iconClass: 'bg-emerald-50 text-emerald-600',
+    },
+    {
+      label: 'Weight',
+      value: `${totalWeight.toFixed(1)} kg`,
+      icon: Weight,
+      iconClass: 'bg-blue-50 text-blue-600',
+    },
+    {
+      label: 'Avg Order',
+      value: completedCount > 0 ? formatCurrency(avgOrderValue) : '—',
+      icon: TrendingUp,
+      iconClass: 'bg-purple-50 text-purple-600',
+    },
+    {
+      label: 'Completion Rate',
+      value: `${completionRate.toFixed(1)}%`,
+      icon: BarChart3,
+      iconClass: 'bg-blue-50 text-blue-600',
+    },
+  ]
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      {/* Total Revenue */}
-      <div className="rounded-xl border border-gray-100 bg-white p-4 ring-1 ring-foreground/10">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 shrink-0">
-            <PhilippinePeso className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">
-              Revenue
-            </p>
-            <p className="text-2xl font-bold text-gray-900 tabular-nums">
-              {formatCurrency(totalRevenue)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Total Orders */}
-      <div className="rounded-xl border border-gray-100 bg-white p-4 ring-1 ring-foreground/10">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 shrink-0">
-            <ShoppingBag className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">
-              Orders
-            </p>
-            <p className="text-2xl font-bold text-gray-900 tabular-nums">
-              {totalOrders}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Total Weight */}
-      <div className="rounded-xl border border-gray-100 bg-white p-4 ring-1 ring-foreground/10">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 shrink-0">
-            <Weight className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">
-              Weight
-            </p>
-            <p className="text-2xl font-bold text-gray-900 tabular-nums">
-              {totalWeight.toFixed(1)} kg
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Order Types */}
-      <div className="rounded-xl border border-gray-100 bg-white p-4 ring-1 ring-foreground/10">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 shrink-0">
-            <Users className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">
-              Order Types
-            </p>
-            <div className="mt-1 space-y-0.5">
-              <div className="flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-blue-600 shrink-0" />
-                <span className="text-sm font-semibold text-gray-900 tabular-nums">
-                  {pickupCount}
-                </span>
-                <span className="text-xs text-gray-500">Pickup</span>
+    <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+      {cards.map((card) => {
+        const Icon = card.icon
+        return (
+          <div
+            key={card.label}
+            className="rounded-xl border border-gray-100 bg-white p-4 ring-1 ring-foreground/10"
+          >
+            <div className="flex flex-col gap-2">
+              <div
+                className={`flex items-center justify-center w-8 h-8 rounded-lg shrink-0 ${card.iconClass}`}
+              >
+                <Icon className="h-4 w-4" />
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-gray-400 shrink-0" />
-                <span className="text-sm font-semibold text-gray-900 tabular-nums">
-                  {walkinCount}
-                </span>
-                <span className="text-xs text-gray-500">Walk-in</span>
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">
+                  {card.label}
+                </p>
+                <p className="text-xl font-bold text-gray-900 tabular-nums mt-0.5 leading-tight">
+                  {card.value}
+                </p>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        )
+      })}
     </div>
-  );
+  )
 }

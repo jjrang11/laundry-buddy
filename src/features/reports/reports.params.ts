@@ -1,49 +1,29 @@
-export const VALID_SORT_COLUMNS = ['created_at', 'weight', 'total_price'] as const
-export type SortColumn = typeof VALID_SORT_COLUMNS[number]
-export type SortDir = 'asc' | 'desc'
-
-export const PAGE_SIZE_OPTIONS = [10, 20, 50] as const
-export type PageSize = typeof PAGE_SIZE_OPTIONS[number]
-
-export interface TransactionParams {
-  page: number // 1-based
-  pageSize: PageSize
-  search: string
-  sortBy: SortColumn
-  sortDir: SortDir
+export interface ReportParams {
+  startDate: string  // YYYY-MM-DD
+  endDate: string    // YYYY-MM-DD
+  status: string     // 'all' or specific OrderStatus
+  type: string       // 'all' | 'pickup' | 'walkin'
 }
 
-export const DEFAULT_PARAMS: TransactionParams = {
-  page: 1,
-  pageSize: 10,
-  search: '',
-  sortBy: 'created_at',
-  sortDir: 'asc',
-}
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
-/**
- * Parses and validates raw URL searchParams into a safe TransactionParams object.
- * Any missing or invalid value falls back to the default.
- * sortBy is whitelist-checked to prevent arbitrary column names reaching Supabase .order().
- */
-export function parseTransactionParams(
-  raw: Record<string, string | string[] | undefined>
-): TransactionParams {
-  const page = Math.max(1, parseInt(String(raw.page ?? '1'), 10) || 1)
+export function parseReportParams(
+  raw: Record<string, string | string[] | undefined>,
+  defaultStartDate: string,
+  defaultEndDate: string,
+): ReportParams {
+  const startDate = DATE_RE.test(String(raw.startDate ?? ''))
+    ? String(raw.startDate)
+    : defaultStartDate
 
-  const rawSize = parseInt(String(raw.pageSize ?? String(DEFAULT_PARAMS.pageSize)), 10)
-  const pageSize: PageSize = (PAGE_SIZE_OPTIONS as readonly number[]).includes(rawSize)
-    ? (rawSize as PageSize)
-    : DEFAULT_PARAMS.pageSize
+  const endDate = DATE_RE.test(String(raw.endDate ?? ''))
+    ? String(raw.endDate)
+    : defaultEndDate
 
-  const search = String(raw.search ?? '').trim()
+  const status = String(raw.status ?? 'all')
 
-  const rawSort = String(raw.sortBy ?? '')
-  const sortBy: SortColumn = (VALID_SORT_COLUMNS as readonly string[]).includes(rawSort)
-    ? (rawSort as SortColumn)
-    : DEFAULT_PARAMS.sortBy
+  const rawType = String(raw.type ?? 'all')
+  const type = ['all', 'pickup', 'walkin'].includes(rawType) ? rawType : 'all'
 
-  const sortDir: SortDir = raw.sortDir === 'desc' ? 'desc' : 'asc'
-
-  return { page, pageSize, search, sortBy, sortDir }
+  return { startDate, endDate, status, type }
 }
