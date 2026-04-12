@@ -28,10 +28,13 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized.')
   if (!ORDER_STATUSES.includes(status as OrderStatus)) throw new Error('Invalid status.')
+  const shopId = getUserShopId(user)
+  if (!shopId) throw new Error('Not associated with a shop.')
   const { error } = await supabase
     .from('orders')
     .update({ status })
     .eq('id', id)
+    .eq('shop_id', shopId)
 
   if (error) {
     console.error('[updateOrderStatus]', error)
@@ -112,6 +115,7 @@ export async function createOrder(
       await supabase.from('order_charges').insert(
         catalog.map((c) => ({
           order_id: inserted.id,
+          charge_id: c.id,
           charge_name: c.name,
           charge_amount: c.amount,
         }))
@@ -134,6 +138,8 @@ export async function updateOrder(
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized.' }
+  const shopId = getUserShopId(user)
+  if (!shopId) return { error: 'Not associated with a shop.' }
 
   const customerName = (formData.get('customer_name') as string)?.trim()
   const contactNumber = (formData.get('contact_number') as string)?.trim()
@@ -162,6 +168,7 @@ export async function updateOrder(
       notes,
     })
     .eq('id', id)
+    .eq('shop_id', shopId)
 
   if (error) {
     console.error('[updateOrder]', error)
@@ -183,6 +190,7 @@ export async function updateOrder(
       await supabase.from('order_charges').insert(
         catalog.map((c) => ({
           order_id: id,
+          charge_id: c.id,
           charge_name: c.name,
           charge_amount: c.amount,
         }))

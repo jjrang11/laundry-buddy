@@ -9,9 +9,13 @@ export type ChargesActionState = { error: string } | { success: true } | null
 
 export async function getAdditionalCharges(): Promise<AdditionalCharge[]> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const shopId = getUserShopId(user)
+  if (!shopId) return []
   const { data } = await supabase
     .from('additional_charges')
     .select('*')
+    .eq('shop_id', shopId)
     .is('deleted_at', null)
     .order('created_at', { ascending: true })
   return (data as AdditionalCharge[]) ?? []

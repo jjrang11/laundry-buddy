@@ -52,7 +52,9 @@
       "Bash(python scripts/search.py \"kanban board drag drop operational staff cognitive load\" --domain ux -n 5 -f markdown)",
       "Bash(npm ls:*)",
       "Bash(grep:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(npx playwright:*)",
+      "Bash(echo \"EXIT_CODE: $?\")"
     ]
   }
 }

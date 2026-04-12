@@ -149,7 +149,12 @@ export function OrderModal({
           if (order.order_charges && order.order_charges.length > 0) {
             const matched = new Set(
               order.order_charges
-                .map((oc) => charges.find((c) => c.name === oc.charge_name)?.id)
+                .map((oc) =>
+                  // Prefer charge_id match (new records); fall back to name for legacy records
+                  oc.charge_id
+                    ? charges.find((c) => c.id === oc.charge_id)?.id
+                    : charges.find((c) => c.name === oc.charge_name)?.id
+                )
                 .filter((id): id is string => id !== undefined)
             );
             setSelectedChargeIds(matched);
@@ -237,7 +242,7 @@ export function OrderModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">
             {mode === "create" ? "New Order" : "Edit Order"}
@@ -495,6 +500,7 @@ export function OrderModal({
                 type="button"
                 variant="destructive"
                 size="sm"
+                aria-label="Delete order"
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={isDeleting || isSubmitting}
                 className="mr-auto"

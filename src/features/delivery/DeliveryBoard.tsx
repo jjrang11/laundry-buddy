@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, useRef } from 'react'
 import { CheckCircle2, Package, Phone, MapPin, Scale } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
@@ -141,6 +141,11 @@ export function DeliveryBoard({ readyOrders, outOrders, shopId }: DeliveryBoardP
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [orders, setOrders] = useState<Order[]>([...readyOrders, ...outOrders])
 
+  // Reconnect state — incremented to force the subscription useEffect to re-run
+  const retryCountRef = useRef(0)
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
+
   // Sync state when server re-renders with fresh props
   useEffect(() => {
     setOrders([...readyOrders, ...outOrders])
@@ -201,12 +206,33 @@ export function DeliveryBoard({ readyOrders, outOrders, shopId }: DeliveryBoardP
           setOrders((prev) => prev.filter((o) => o.id !== deleted.id))
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          // Successful connection — reset backoff counter and cancel any pending retry
+          retryCountRef.current = 0
+          if (retryTimeoutRef.current) {
+            clearTimeout(retryTimeoutRef.current)
+            retryTimeoutRef.current = null
+          }
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          // Exponential backoff: 1s, 2s, 4s … capped at 30s
+          const delay = Math.min(1_000 * 2 ** retryCountRef.current, 30_000)
+          retryCountRef.current++
+          retryTimeoutRef.current = setTimeout(() => {
+            setRetryKey((k) => k + 1) // triggers this useEffect to re-run with a fresh channel
+          }, delay)
+        }
+      })
 
     return () => {
       supabase.removeChannel(channel)
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
+        retryTimeoutRef.current = null
+      }
     }
-  }, [shopId])
+  }, [shopId, retryKey]) // retryKey forces re-subscription after a failed channel
 
   const liveReady = orders.filter((o) => o.status === 'Ready for Delivery')
   const liveOut = orders.filter((o) => o.status === 'Out for Delivery')

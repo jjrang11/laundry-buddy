@@ -16,6 +16,7 @@ export interface AdditionalCharge {
 export interface OrderCharge {
   id: string
   order_id: string
+  charge_id?: string | null
   charge_name: string
   charge_amount: number
   created_at: string

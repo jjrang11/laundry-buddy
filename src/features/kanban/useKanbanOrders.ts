@@ -41,6 +41,11 @@ export function useKanbanOrders(initialOrders: Order[], shopId: string) {
     new Map()
   );
 
+  // Reconnect state — incremented to force the subscription useEffect to re-run
+  const retryCountRef = useRef(0);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
+
   // Sync server-fetched orders into state when router.refresh() produces new data
   useEffect(() => {
     setOrders(initialOrders);
@@ -113,18 +118,38 @@ export function useKanbanOrders(initialOrders: Order[], shopId: string) {
         }
       )
       .subscribe((status) => {
-        if (status === "SUBSCRIBED") setRealtimeStatus("connected");
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT")
+        if (status === "SUBSCRIBED") {
+          setRealtimeStatus("connected");
+          // Successful connection — reset backoff counter and cancel any pending retry
+          retryCountRef.current = 0;
+          if (retryTimeoutRef.current) {
+            clearTimeout(retryTimeoutRef.current);
+            retryTimeoutRef.current = null;
+          }
+        }
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           setRealtimeStatus("error");
+          // Exponential backoff: 1s, 2s, 4s … capped at 30s
+          const delay = Math.min(1_000 * 2 ** retryCountRef.current, 30_000);
+          retryCountRef.current++;
+          retryTimeoutRef.current = setTimeout(() => {
+            setRealtimeStatus("connecting");
+            setRetryKey((k) => k + 1); // triggers this useEffect to re-run with a fresh channel
+          }, delay);
+        }
         if (status === "CLOSED") setRealtimeStatus("connecting");
       });
 
     const timeouts = timeoutsRef.current;
     return () => {
       supabase.removeChannel(channel);
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
       timeouts.forEach(clearTimeout);
     };
-  }, [shopId]);
+  }, [shopId, retryKey]); // retryKey forces re-subscription after a failed channel
 
   function clearNewHighlight(id: string) {
     const t = timeoutsRef.current.get(id);
