@@ -8,8 +8,9 @@ test.describe('Reports page', () => {
 
   test('shows all 6 summary cards', async ({ page }) => {
     const labels = ['Revenue', 'Orders', 'Completed', 'Weight', 'Avg Order', 'Completion Rate']
+    const main = page.locator('main')
     for (const label of labels) {
-      await expect(page.getByText(label).first()).toBeVisible()
+      await expect(main.getByText(label).first()).toBeVisible()
     }
   })
 
@@ -20,10 +21,11 @@ test.describe('Reports page', () => {
   })
 
   test('charts are rendered', async ({ page }) => {
-    // Charts render inside svg elements
-    await expect(page.locator('svg').first()).toBeVisible({ timeout: 8_000 })
+    // Charts render inside svg elements — scope to main to skip hidden mobile nav SVGs
+    const main = page.locator('main')
+    await expect(main.locator('svg').first()).toBeVisible({ timeout: 8_000 })
     // At least 3 chart containers (Revenue/Volume, Status, Order Type)
-    const svgCount = await page.locator('svg').count()
+    const svgCount = await main.locator('svg').count()
     expect(svgCount).toBeGreaterThanOrEqual(3)
   })
 

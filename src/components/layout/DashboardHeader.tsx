@@ -5,9 +5,10 @@ import { signOut } from "@/features/auth/auth.actions";
 import { OrderModal } from "@/features/orders/OrderModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { WashingMachine, LogOut, Plus } from "lucide-react";
+import { WashingMachine, LogOut, Plus, Menu } from "lucide-react";
 import type { UserRole } from "@/lib/auth-utils";
 import type { ShopBranding } from "@/lib/types";
+import { useMobileNav } from "@/components/layout/MobileNavProvider";
 
 interface DashboardHeaderProps {
   email: string;
@@ -18,10 +19,20 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ email, role, branding }: DashboardHeaderProps) {
   const [showNewOrder, setShowNewOrder] = useState(false);
   const handleCloseNewOrder = useCallback(() => setShowNewOrder(false), []);
+  const { openMobileNav } = useMobileNav();
 
   return (
     <>
       <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200 bg-white/95 backdrop-blur-sm px-4 shadow-sm">
+        {/* Hamburger (mobile only) */}
+        <button
+          onClick={openMobileNav}
+          className="md:hidden flex items-center justify-center w-8 h-8 -ml-1 mr-1 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+          aria-label="Open navigation menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
         {/* Brand */}
         <div className="flex items-center gap-2.5">
           {branding.logo_url ? (

@@ -129,7 +129,7 @@ export function KanbanBoard({ initialOrders, userRole, shopId }: KanbanBoardProp
           <span className="sr-only" aria-live="polite">Live updates active</span>
         )}
 
-        <div className="flex gap-4 h-full overflow-x-auto px-4 pb-4 pt-4">
+        <div className="flex gap-4 h-full overflow-x-auto overscroll-x-contain px-4 pb-4 pt-4">
           {ORDER_STATUSES.map((status) => (
             <KanbanColumn
               key={status}

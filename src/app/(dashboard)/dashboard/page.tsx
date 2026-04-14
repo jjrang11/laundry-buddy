@@ -14,7 +14,7 @@ export default async function DashboardPage() {
     .from('orders')
     .select('*, order_charges(*)')
     .is('deleted_at', null)
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: true })
 
   if (error) {
     return (

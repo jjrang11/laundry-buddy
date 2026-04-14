@@ -45,6 +45,31 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
   revalidatePath('/delivery')
 }
 
+// ── Bulk status update (used by delivery bulk actions) ─────────────────────
+
+export async function bulkUpdateOrderStatus(ids: string[], status: OrderStatus): Promise<void> {
+  if (!ids.length) return
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized.')
+  if (!ORDER_STATUSES.includes(status as OrderStatus)) throw new Error('Invalid status.')
+  const shopId = getUserShopId(user)
+  if (!shopId) throw new Error('Not associated with a shop.')
+  const { error } = await supabase
+    .from('orders')
+    .update({ status })
+    .in('id', ids)
+    .eq('shop_id', shopId)
+
+  if (error) {
+    console.error('[bulkUpdateOrderStatus]', error)
+    throw new Error('Something went wrong. Please try again.')
+  }
+  revalidatePath('/dashboard')
+  revalidatePath('/orders')
+  revalidatePath('/delivery')
+}
+
 // ── Create ─────────────────────────────────────────────────────────────────
 
 export async function createOrder(

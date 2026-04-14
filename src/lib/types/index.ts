@@ -43,7 +43,9 @@ export interface Order {
 export interface Shop {
   id: string
   name: string
+  display_name: string
   created_at: string
+  is_suspended: boolean
 }
 
 export interface ShopBranding {

@@ -54,7 +54,21 @@
       "Bash(grep:*)",
       "Bash(npx eslint:*)",
       "Bash(npx playwright:*)",
-      "Bash(echo \"EXIT_CODE: $?\")"
+      "Bash(echo \"EXIT_CODE: $?\")",
+      "Bash(python scripts/search.py \"operations dashboard B2B staff workflow laundry service\" --design-system -f markdown)",
+      "Bash(python scripts/search.py \"operations dashboard B2B staff workflow service\" --design-system -f markdown)",
+      "Bash(python scripts/search.py \"mobile navigation drawer hamburger responsive sidebar\" --domain ux -n 8)",
+      "Bash(python scripts/search.py \"touch target size accessibility responsive table mobile\" --domain ux -n 8)",
+      "Bash(cmd:*)",
+      "Bash(wait)",
+      "Bash(tasklist /fi \"imagename eq node.exe\" /fo csv)",
+      "Bash(node -e ':*)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const s=JSON.parse\\(fs.readFileSync\\('tests/e2e/.auth/admin.json','utf8'\\)\\);const ls=s.origins?.[0]?.localStorage||[];for\\(const e of ls\\){if\\(e.name&&e.name.includes\\('auth'\\)\\){try{const v=JSON.parse\\(e.value\\);const t=v?.access_token||v?.session?.access_token;if\\(t\\){const p=JSON.parse\\(Buffer.from\\(t.split\\('.'\\)[1],'base64'\\).toString\\(\\)\\);console.log\\('meta:',JSON.stringify\\(p.user_metadata\\)\\);}}catch{}}}\")",
+      "Bash(node -e \"const fs=require\\('fs'\\);const s=JSON.parse\\(fs.readFileSync\\('tests/e2e/.auth/admin.json','utf8'\\)\\);console.log\\('keys:',Object.keys\\(s\\)\\);const o=s.origins||[];console.log\\('origins:',o.length\\);if\\(o[0]\\)console.log\\('origin keys:',Object.keys\\(o[0]\\)\\);\")",
+      "Bash(cat playwright.config.ts)",
+      "Bash(cat playwright.config.js)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(node:*)"
     ]
   }
 }

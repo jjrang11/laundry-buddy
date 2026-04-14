@@ -24,6 +24,15 @@ setup('authenticate as admin', async ({ page }) => {
   // Wait for redirect to dashboard after login
   await page.waitForURL(/dashboard/, { timeout: 15_000 })
 
+  // Wait for all HTTP activity (including any refreshSession() call that stamps
+  // shop_id into the JWT) to settle before saving cookies. Playwright's
+  // networkidle counts only HTTP requests — WebSocket connections are excluded —
+  // so this resolves once the auth token-refresh round-trip completes and the
+  // updated JWT is stored in cookies. Tests that follow will therefore load a
+  // session that already carries shop_id in user_metadata, which satisfies the
+  // get_my_shop_id() RLS check used by postgres_changes subscriptions.
+  await page.waitForLoadState('networkidle', { timeout: 20_000 })
+
   // Save auth cookies/storage so other tests skip the login step
   await page.context().storageState({ path: authFile })
 })

@@ -152,7 +152,7 @@ export function OrdersTable({ orders, totalCount, ordersParams, userRole, shopNa
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
             <Input
               placeholder="Search customer..."
-              className="pl-8 h-8 text-sm w-44"
+              className="pl-8 h-8 text-sm w-full sm:w-44"
               value={searchValue}
               onChange={(e) => handleSearchChange(e.target.value)}
             />
@@ -160,7 +160,7 @@ export function OrdersTable({ orders, totalCount, ordersParams, userRole, shopNa
 
           {/* Status */}
           <Select value={status} onValueChange={(val) => navigate({ status: val, page: 1 })}>
-            <SelectTrigger className="w-44 h-8 text-sm">
+            <SelectTrigger className="w-full sm:w-44 h-8 text-sm">
               <SelectValue>{statusLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -173,7 +173,7 @@ export function OrdersTable({ orders, totalCount, ordersParams, userRole, shopNa
 
           {/* Type */}
           <Select value={type} onValueChange={(val) => navigate({ type: val as OrdersParams['type'], page: 1 })}>
-            <SelectTrigger className="w-32 h-8 text-sm">
+            <SelectTrigger className="w-full sm:w-32 h-8 text-sm">
               <SelectValue>{typeLabel}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -222,8 +222,8 @@ export function OrdersTable({ orders, totalCount, ordersParams, userRole, shopNa
             <tr className="border-b border-gray-200 bg-gray-50">
               <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Customer</th>
               <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Type</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Weight</th>
+              <th className="hidden sm:table-cell px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Type</th>
+              <th className="hidden sm:table-cell px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Weight</th>
               <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Total</th>
               <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Created</th>
             </tr>
@@ -261,10 +261,10 @@ export function OrdersTable({ orders, totalCount, ordersParams, userRole, shopNa
                     </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">
+                  <td className="hidden sm:table-cell px-4 py-3 text-gray-600">
                     {order.order_type === 'pickup' ? 'Pickup' : 'Walk-in'}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-gray-600">
+                  <td className="hidden sm:table-cell px-4 py-3 text-right tabular-nums text-gray-600">
                     {order.weight != null ? `${order.weight} kg` : '—'}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums font-medium text-gray-900">
@@ -299,7 +299,7 @@ export function OrdersTable({ orders, totalCount, ordersParams, userRole, shopNa
 
       {/* Pagination */}
       {totalCount > 0 && (
-        <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between gap-4">
+        <div className="px-4 py-3 border-t border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           {/* Result count + page size */}
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-400 tabular-nums">

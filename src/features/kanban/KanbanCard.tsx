@@ -19,13 +19,13 @@ import { MapPin, Store, Weight, Tag } from "lucide-react";
 
 // Left border color per status — matches COLUMN_ACCENT hues
 const STATUS_BORDER: Record<string, string> = {
-  "New Order":          "border-l-slate-400",
-  "For Pickup":         "border-l-amber-400",
-  "Arrived at Shop":    "border-l-sky-400",
-  Processing:           "border-l-orange-400",
+  "New Order": "border-l-slate-400",
+  "For Pickup": "border-l-amber-400",
+  "Arrived at Shop": "border-l-sky-400",
+  Processing: "border-l-orange-400",
   "Ready for Delivery": "border-l-teal-500",
-  "Out for Delivery":   "border-l-cyan-400",
-  Completed:            "border-l-emerald-500",
+  "Out for Delivery": "border-l-cyan-400",
+  Completed: "border-l-emerald-500",
 };
 
 const ORDER_TYPE_LABEL: Record<OrderType, string> = {
@@ -50,9 +50,14 @@ export function KanbanCard({
 }: KanbanCardProps) {
   const total = computeGrandTotal(order);
   const [relativeTime, setRelativeTime] = useState<string | null>(null);
+  const [timeColor, setTimeColor] = useState("text-slate-400");
 
   useEffect(() => {
     setRelativeTime(formatRelativeTime(order.created_at));
+    const hrs = (Date.now() - new Date(order.created_at).getTime()) / 3_600_000;
+    if (hrs >= 11) setTimeColor("text-red-400");
+    else if (hrs >= 6) setTimeColor("text-orange-400");
+    else setTimeColor("text-green-400");
   }, [order.created_at]);
 
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -150,7 +155,7 @@ export function KanbanCard({
         >
           {order.order_type === "pickup" ? "Pickup" : "Walk-in"}
         </Badge>
-        <span className="text-xs text-slate-400 tabular-nums">
+        <span className={`text-xs tabular-nums ${timeColor}`}>
           {relativeTime ?? ""}
         </span>
       </div>
