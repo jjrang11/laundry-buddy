@@ -77,6 +77,7 @@ export function KanbanBoard({ initialOrders, userRole, shopId }: KanbanBoardProp
     const order = orders.find((o) => o.id === orderId);
     if (!order || order.status === newStatus) return;
 
+    const previousStatus = order.status;
     startTransition(async () => {
       applyOptimistic({ id: orderId, status: newStatus });
       try {
@@ -85,6 +86,7 @@ export function KanbanBoard({ initialOrders, userRole, shopId }: KanbanBoardProp
           prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
         );
       } catch {
+        applyOptimistic({ id: orderId, status: previousStatus });
         toast.error("Failed to update order status. Please try again.");
       }
     });
@@ -127,7 +129,7 @@ export function KanbanBoard({ initialOrders, userRole, shopId }: KanbanBoardProp
           <span className="sr-only" aria-live="polite">Live updates active</span>
         )}
 
-        <div className="flex gap-4 h-full overflow-x-auto px-4 pb-4 pt-4">
+        <div className="flex gap-4 h-full overflow-x-auto overscroll-x-contain px-4 pb-4 pt-4">
           {ORDER_STATUSES.map((status) => (
             <KanbanColumn
               key={status}

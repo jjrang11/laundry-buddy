@@ -149,7 +149,12 @@ export function OrderModal({
           if (order.order_charges && order.order_charges.length > 0) {
             const matched = new Set(
               order.order_charges
-                .map((oc) => charges.find((c) => c.name === oc.charge_name)?.id)
+                .map((oc) =>
+                  // Prefer charge_id match (new records); fall back to name for legacy records
+                  oc.charge_id
+                    ? charges.find((c) => c.id === oc.charge_id)?.id
+                    : charges.find((c) => c.name === oc.charge_name)?.id
+                )
                 .filter((id): id is string => id !== undefined)
             );
             setSelectedChargeIds(matched);
@@ -199,10 +204,13 @@ export function OrderModal({
         JSON.stringify([...selectedChargeIds])
       );
 
-      const result =
-        mode === "create"
-          ? await createOrder(null, formData)
-          : await updateOrder(order!.id, null, formData);
+      let result: { error: string } | { success: true } | null;
+      if (mode === "create") {
+        result = await createOrder(null, formData);
+      } else {
+        if (!order) return;
+        result = await updateOrder(order.id, null, formData);
+      }
 
       if (result && "error" in result) {
         toast.error(result.error);
@@ -234,7 +242,7 @@ export function OrderModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">
             {mode === "create" ? "New Order" : "Edit Order"}
@@ -245,7 +253,7 @@ export function OrderModal({
           {/* Order type toggle */}
           <div className="space-y-1.5">
             <Label>Order Type</Label>
-            <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+            <div className="flex rounded-lg border border-slate-200 overflow-hidden">
               <button
                 type="button"
                 onClick={() => {
@@ -255,8 +263,8 @@ export function OrderModal({
                 className={[
                   "flex-1 py-2 text-sm font-medium transition-colors",
                   orderType === "walkin"
-                    ? "bg-gray-900 text-white"
-                    : "bg-white text-gray-600 hover:bg-gray-50",
+                    ? "bg-slate-900 text-white"
+                    : "bg-white text-slate-600 hover:bg-slate-50",
                 ].join(" ")}
               >
                 Walk-in
@@ -270,8 +278,8 @@ export function OrderModal({
                 className={[
                   "flex-1 py-2 text-sm font-medium transition-colors",
                   orderType === "pickup"
-                    ? "bg-gray-900 text-white"
-                    : "bg-white text-gray-600 hover:bg-gray-50",
+                    ? "bg-slate-900 text-white"
+                    : "bg-white text-slate-600 hover:bg-slate-50",
                 ].join(" ")}
               >
                 Pickup
@@ -388,7 +396,7 @@ export function OrderModal({
             />
             <div className="space-y-1.5">
               <Label>Price / kg</Label>
-              <div className="flex h-9 items-center rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-500 tabular-nums">
+              <div className="flex h-9 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500 tabular-nums">
                 {formatCurrency(pricePerKg)}
               </div>
             </div>
@@ -425,14 +433,14 @@ export function OrderModal({
                         className={[
                           "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border transition-colors",
                           selected
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50",
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50",
                         ].join(" ")}
                       >
                         {charge.name}
                         <span
                           className={
-                            selected ? "text-blue-200" : "text-gray-400"
+                            selected ? "text-primary-foreground/70" : "text-slate-400"
                           }
                         >
                           {formatCurrency(charge.amount)}
@@ -470,17 +478,17 @@ export function OrderModal({
 
           {/* Grand total */}
           {grandTotal !== null && !isNaN(grandTotal) && (
-            <div className="flex items-center justify-between rounded-lg bg-gray-50 border border-gray-200 px-3 py-2">
+            <div className="flex items-center justify-between rounded-lg bg-teal-50 border border-teal-100 px-3 py-2.5">
               <div className="space-y-0.5">
-                <span className="text-sm text-gray-600">Estimated Total</span>
+                <span className="text-sm font-medium text-teal-800">Estimated Total</span>
                 {chargesTotal > 0 && baseTotalPrice !== null && (
-                  <p className="text-xs text-gray-400 tabular-nums">
+                  <p className="text-xs text-teal-600/70 tabular-nums">
                     {formatCurrency(baseTotalPrice)} base +{" "}
                     {formatCurrency(chargesTotal)} charges
                   </p>
                 )}
               </div>
-              <span className="text-base font-bold text-gray-900 tabular-nums">
+              <span className="text-base font-bold text-teal-900 tabular-nums">
                 {formatCurrency(grandTotal)}
               </span>
             </div>
@@ -492,6 +500,7 @@ export function OrderModal({
                 type="button"
                 variant="destructive"
                 size="sm"
+                aria-label="Delete order"
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={isDeleting || isSubmitting}
                 className="mr-auto"

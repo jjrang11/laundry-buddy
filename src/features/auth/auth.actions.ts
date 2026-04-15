@@ -2,6 +2,8 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/service-role'
+import { getUserShopId, isOwner } from '@/lib/auth-utils'
 
 export async function signIn(
   _prevState: { error: string } | null,
@@ -15,10 +17,26 @@ export async function signIn(
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
     return { error: 'Invalid email or password.' }
+  }
+
+  // Block suspended shops. Owners have no shop_id and are never blocked.
+  const shopId = getUserShopId(authData.user)
+  if (shopId && !isOwner(authData.user)) {
+    const adminClient = createServiceRoleClient()
+    const { data: shop } = await adminClient
+      .from('shops')
+      .select('is_suspended')
+      .eq('id', shopId)
+      .single()
+
+    if (shop?.is_suspended) {
+      await supabase.auth.signOut()
+      return { error: 'Your shop has been suspended. Please contact support to restore access.' }
+    }
   }
 
   redirect('/dashboard')

@@ -21,7 +21,7 @@ export async function getAllShops(): Promise<Shop[]> {
 
   const { data, error } = await adminClient
     .from("shops")
-    .select("id, name, created_at")
+    .select("id, name, created_at, is_suspended, settings(shop_name)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -29,7 +29,16 @@ export async function getAllShops(): Promise<Shop[]> {
     return [];
   }
 
-  return data ?? [];
+  return (data ?? []).map((shop) => {
+    const settingsRow = Array.isArray(shop.settings) ? shop.settings[0] : shop.settings;
+    return {
+      id: shop.id,
+      name: shop.name,
+      display_name: (settingsRow as { shop_name?: string | null } | null)?.shop_name || shop.name,
+      created_at: shop.created_at,
+      is_suspended: shop.is_suspended,
+    };
+  });
 }
 
 // ── Create shop with owner ────────────────────────────────────────────────────
@@ -157,6 +166,38 @@ export async function inviteShopAdmin(
       error:
         inviteError.message ?? "Could not create admin user. Please try again.",
     };
+  }
+
+  return { success: true };
+}
+
+// ── Set shop suspension ───────────────────────────────────────────────────────
+// Owner-only. Toggles the is_suspended flag without deleting any data.
+// When suspended, all admin/staff users of the shop are blocked from logging
+// in and accessing the dashboard.
+
+export async function setShopSuspension(
+  shopId: string,
+  suspend: boolean
+): Promise<OwnerActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!isOwner(user)) return { error: "Unauthorized." };
+  if (!shopId) return { error: "Shop ID is required." };
+
+  const adminClient = createServiceRoleClient();
+
+  const { error } = await adminClient
+    .from("shops")
+    .update({ is_suspended: suspend })
+    .eq("id", shopId);
+
+  if (error) {
+    console.error("[setShopSuspension]", error);
+    return { error: `Could not ${suspend ? "suspend" : "reactivate"} shop. Please try again.` };
   }
 
   return { success: true };

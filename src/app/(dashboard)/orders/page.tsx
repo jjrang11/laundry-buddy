@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getUser } from '@/features/auth/auth.actions'
 import { getUserRole } from '@/lib/auth-utils'
 import { createClient } from '@/lib/supabase/server'
+import { getShopBranding } from '@/features/settings/branding.actions'
 import { parseOrdersParams } from './orders.params'
 import type { Order } from '@/lib/types'
 import { OrdersTable } from './OrdersTable'
@@ -24,7 +25,7 @@ export default async function AllOrdersPage({
   const role = getUserRole(user)
 
   const ordersParams = parseOrdersParams(await searchParams)
-  const { page, pageSize, search, status, type, showDeleted } = ordersParams
+  const { page, pageSize, search, status, type, showDeleted, startDate, endDate } = ordersParams
 
   const supabase = await createClient()
 
@@ -40,6 +41,13 @@ export default async function AllOrdersPage({
     query = query.is('deleted_at', null)
   }
 
+  if (startDate) {
+    query = query.gte('created_at', `${startDate}T00:00:00+08:00`)
+  }
+  if (endDate) {
+    query = query.lte('created_at', `${endDate}T23:59:59+08:00`)
+  }
+
   if (search) {
     query = query.ilike('customer_name', `%${search}%`)
   }
@@ -52,7 +60,8 @@ export default async function AllOrdersPage({
 
   query = query.range(from, to)
 
-  const { data, count, error } = await query
+  const [{ data, count, error }, branding] = await Promise.all([query, getShopBranding()])
+  const shopName = branding.shop_name ?? 'Laundry Buddy'
 
   if (error) {
     return (
@@ -74,6 +83,7 @@ export default async function AllOrdersPage({
           totalCount={count ?? 0}
           ordersParams={ordersParams}
           userRole={role}
+          shopName={shopName}
         />
       </div>
     </div>

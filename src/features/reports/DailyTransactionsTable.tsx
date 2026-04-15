@@ -7,9 +7,8 @@ import {
   flexRender,
   type ColumnDef,
 } from '@tanstack/react-table'
-import { Search, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { cn, formatCurrency, computeGrandTotal } from '@/lib/utils'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -26,41 +25,84 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table'
-import { STATUS_COLORS, type OrderStatus } from '@/lib/constants/order-statuses'
-import {
-  PAGE_SIZE_OPTIONS,
-  type TransactionParams,
-  type SortColumn,
-  type SortDir,
-} from './reports.params'
+import { STATUS_COLORS } from '@/lib/constants/order-statuses'
 import type { Order } from '@/lib/types'
 import { useTableNavigation } from '@/lib/hooks/useTableNavigation'
-import { useDebouncedSearch } from '@/lib/hooks/useDebouncedSearch'
 
-interface DailyTransactionsTableProps {
+// Local type definitions (self-contained — not sourced from reports.params)
+const PAGE_SIZE_OPTIONS = [10, 20, 50] as const
+type PageSize = typeof PAGE_SIZE_OPTIONS[number]
+type SortColumn = 'created_at' | 'customer_name' | 'status' | 'order_type' | 'total_price'
+type SortDir = 'asc' | 'desc'
+
+interface ReportParams {
+  startDate: string
+  endDate: string
+  status: string
+  type: string
+  page: number
+  pageSize: PageSize
+  sortBy: SortColumn
+  sortDir: SortDir
+}
+
+interface SortIconProps {
+  col: SortColumn
+  sortBy: SortColumn
+  sortDir: SortDir
+}
+
+function SortIcon({ col, sortBy, sortDir }: SortIconProps) {
+  if (sortBy !== col) return <ChevronsUpDown className="h-3 w-3 text-gray-300" />
+  return sortDir === 'asc'
+    ? <ChevronUp className="h-3 w-3 text-gray-600" />
+    : <ChevronDown className="h-3 w-3 text-gray-600" />
+}
+
+interface SortButtonProps {
+  col: SortColumn
+  label: string
+  align?: 'left' | 'right'
+  sortBy: SortColumn
+  sortDir: SortDir
+  onSort: (col: SortColumn) => void
+}
+
+function SortButton({ col, label, align = 'left', sortBy, sortDir, onSort }: SortButtonProps) {
+  return (
+    <button
+      onClick={() => onSort(col)}
+      aria-label={`Sort by ${label}${sortBy === col ? `, currently ${sortDir === 'asc' ? 'ascending' : 'descending'}` : ''}`}
+      className={cn(
+        'inline-flex items-center gap-1 transition-colors duration-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded',
+        align === 'right' && 'ml-auto'
+      )}
+    >
+      {label}
+      <SortIcon col={col} sortBy={sortBy} sortDir={sortDir} />
+    </button>
+  )
+}
+
+interface ReportTransactionsTableProps {
   orders: Order[]
   totalCount: number
-  transactionParams: TransactionParams
+  params: ReportParams
+  hasFilters: boolean
+  externalPending?: boolean
 }
 
 export function DailyTransactionsTable({
   orders,
   totalCount,
-  transactionParams,
-}: DailyTransactionsTableProps) {
-  const { page, pageSize, search, sortBy, sortDir } = transactionParams
+  params,
+  hasFilters,
+  externalPending = false,
+}: ReportTransactionsTableProps) {
+  const { page, pageSize, sortBy, sortDir } = params
   const { navigate, isPending } = useTableNavigation()
+  const isLoading = isPending || externalPending
 
-  const handleSearchCommit = useCallback(
-    (val: string) => navigate({ search: val, page: 1 }),
-    [navigate]
-  )
-  const { localValue: searchValue, handleChange: handleSearchChange } = useDebouncedSearch(
-    search,
-    handleSearchCommit
-  )
-
-  // Sort toggle helper: if already sorted on this column, flip direction; otherwise sort asc.
   const toggleSort = useCallback(
     (col: SortColumn) => {
       const nextDir: SortDir = sortBy === col && sortDir === 'asc' ? 'desc' : 'asc'
@@ -69,36 +111,18 @@ export function DailyTransactionsTable({
     [navigate, sortBy, sortDir]
   )
 
-  // Sort indicator for a given column
-  const SortIcon = useCallback(
-    ({ col }: { col: SortColumn }) => {
-      if (sortBy !== col) return <ChevronsUpDown className="h-3 w-3 text-gray-300" />
-      return sortDir === 'asc'
-        ? <ChevronUp className="h-3 w-3 text-gray-600" />
-        : <ChevronDown className="h-3 w-3 text-gray-600" />
-    },
-    [sortBy, sortDir]
-  )
-
-  // Column definitions live inside the component so sort headers can close over navigate/sortBy/sortDir.
   const columns = useMemo<ColumnDef<Order>[]>(
     () => [
       {
         accessorKey: 'created_at',
-        header: () => (
-          <button
-            onClick={() => toggleSort('created_at')}
-            aria-label={`Sort by time${sortBy === 'created_at' ? `, currently ${sortDir === 'asc' ? 'ascending' : 'descending'}` : ''}`}
-            className="inline-flex items-center gap-1 transition-colors duration-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
-          >
-            Time
-            <SortIcon col="created_at" />
-          </button>
-        ),
+        header: () => <SortButton col="created_at" label="Date & Time" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />,
         cell: ({ row }) => (
           <span className="text-gray-500 text-xs tabular-nums whitespace-nowrap">
-            {new Date(row.original.created_at).toLocaleTimeString('en-PH', {
+            {new Date(row.original.created_at).toLocaleString('en-PH', {
               timeZone: 'Asia/Manila',
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
               hour: 'numeric',
               minute: '2-digit',
             })}
@@ -107,7 +131,7 @@ export function DailyTransactionsTable({
       },
       {
         accessorKey: 'customer_name',
-        header: 'Customer',
+        header: () => <SortButton col="customer_name" label="Customer" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />,
         cell: ({ row }) => (
           <span className="font-medium text-gray-900 max-w-[160px] truncate block">
             {row.original.customer_name}
@@ -116,7 +140,7 @@ export function DailyTransactionsTable({
       },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: () => <SortButton col="status" label="Status" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />,
         cell: ({ row }) => (
           <span
             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[row.original.status] ?? 'bg-gray-100 text-gray-700'}`}
@@ -127,7 +151,7 @@ export function DailyTransactionsTable({
       },
       {
         accessorKey: 'order_type',
-        header: 'Type',
+        header: () => <SortButton col="order_type" label="Type" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />,
         cell: ({ row }) => (
           <span className="text-gray-600">
             {row.original.order_type === 'pickup' ? 'Pickup' : 'Walk-in'}
@@ -135,38 +159,8 @@ export function DailyTransactionsTable({
         ),
       },
       {
-        accessorKey: 'weight',
-        header: () => (
-          <button
-            onClick={() => toggleSort('weight')}
-            aria-label={`Sort by weight${sortBy === 'weight' ? `, currently ${sortDir === 'asc' ? 'ascending' : 'descending'}` : ''}`}
-            className="inline-flex items-center gap-1 ml-auto transition-colors duration-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
-          >
-            Weight
-            <SortIcon col="weight" />
-          </button>
-        ),
-        cell: ({ row }) => (
-          <span className="tabular-nums text-gray-600">
-            {row.original.weight != null ? `${row.original.weight} kg` : '—'}
-          </span>
-        ),
-      },
-      {
         id: 'total',
-        // NOTE: Server-side sort uses total_price (the stored column) only.
-        // computeGrandTotal also adds order_charges amounts, which cannot be
-        // included in a Supabase .order() call without a DB view or generated column.
-        header: () => (
-          <button
-            onClick={() => toggleSort('total_price')}
-            aria-label={`Sort by total${sortBy === 'total_price' ? `, currently ${sortDir === 'asc' ? 'ascending' : 'descending'}` : ''}`}
-            className="inline-flex items-center gap-1 ml-auto transition-colors duration-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
-          >
-            Total
-            <SortIcon col="total_price" />
-          </button>
-        ),
+        header: () => <SortButton col="total_price" label="Total" align="right" sortBy={sortBy} sortDir={sortDir} onSort={toggleSort} />,
         cell: ({ row }) => {
           const total = computeGrandTotal(row.original)
           return (
@@ -177,8 +171,7 @@ export function DailyTransactionsTable({
         },
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [toggleSort, SortIcon]
+    [sortBy, sortDir, toggleSort]
   )
 
   const pageCount = Math.ceil(totalCount / pageSize)
@@ -192,7 +185,6 @@ export function DailyTransactionsTable({
     data: orders,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    // Sorting, filtering, and pagination are all handled server-side.
     manualPagination: true,
     manualSorting: true,
     manualFiltering: true,
@@ -200,37 +192,31 @@ export function DailyTransactionsTable({
   })
 
   return (
-    <div>
-      {/* Section header + search */}
-      <div className="mt-6 mb-3 flex items-center justify-between">
+    <div className="mt-6">
+      <div className="mb-3 flex items-center justify-between">
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
           Transactions
         </h2>
-        <div className="relative w-52">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-          <Input
-            placeholder="Search by name..."
-            className="pl-8 h-8 text-sm"
-            value={searchValue}
-            onChange={(e) => handleSearchChange(e.target.value)}
-          />
-        </div>
+        <p className="text-xs text-gray-400 tabular-nums">
+          {totalCount === 0
+            ? '0 orders'
+            : `Showing ${rangeStart}–${rangeEnd} of ${totalCount} ${totalCount === 1 ? 'order' : 'orders'}`}
+        </p>
       </div>
 
-      {/* Row count */}
-      <p className="text-xs text-gray-400 mb-2">
-        {totalCount === 0
-          ? '0 orders'
-          : `Showing ${rangeStart}–${rangeEnd} of ${totalCount} ${totalCount === 1 ? 'order' : 'orders'}`}
-      </p>
-
-      {/* Table — opacity overlay while RSC re-render is in flight */}
       <div
         className={cn(
-          'rounded-xl border border-gray-200 overflow-hidden bg-white',
-          isPending && 'opacity-60 pointer-events-none transition-opacity duration-150'
+          'relative rounded-xl border border-gray-200 overflow-hidden bg-white',
+          isLoading && 'pointer-events-none'
         )}
       >
+        {/* Loading overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
+            <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+          </div>
+        )}
+        <div className={cn('transition-opacity duration-150', isLoading && 'opacity-40')}>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -238,22 +224,19 @@ export function DailyTransactionsTable({
                 key={headerGroup.id}
                 className="border-b border-gray-200 bg-gray-50 hover:bg-gray-50"
               >
-                {headerGroup.headers.map((header, i) => {
-                  const isRight = i >= 4
-                  return (
-                    <TableHead
-                      key={header.id}
-                      className={cn(
-                        'px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wide h-auto',
-                        isRight ? 'text-right' : 'text-left'
-                      )}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  )
-                })}
+                {headerGroup.headers.map((header, i) => (
+                  <TableHead
+                    key={header.id}
+                    className={cn(
+                      'px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wide h-auto',
+                      i === 4 ? 'text-right' : 'text-left'
+                    )}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -264,31 +247,28 @@ export function DailyTransactionsTable({
                   key={row.id}
                   className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors duration-100"
                 >
-                  {row.getVisibleCells().map((cell, i) => {
-                    const isRight = i >= 4
-                    return (
-                      <TableCell
-                        key={cell.id}
-                        className={cn('px-4 py-3', isRight ? 'text-right' : 'text-left')}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    )
-                  })}
+                  {row.getVisibleCells().map((cell, i) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cn('px-4 py-3', i === 4 ? 'text-right' : 'text-left')}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
                 </TableRow>
               ))
             ) : (
               <TableRow className="hover:bg-white border-0">
-                <TableCell colSpan={6} className="px-4 py-14 text-center">
-                  {search === '' ? (
+                <TableCell colSpan={5} className="px-4 py-14 text-center">
+                  {!hasFilters ? (
                     <>
-                      <p className="text-sm font-medium text-gray-500">No orders on this day</p>
-                      <p className="text-xs text-gray-400 mt-1">Try selecting a different date.</p>
+                      <p className="text-sm font-medium text-gray-500">No orders found</p>
+                      <p className="text-xs text-gray-400 mt-1">No orders exist in this date range.</p>
                     </>
                   ) : (
                     <>
-                      <p className="text-sm font-medium text-gray-500">No orders match your search</p>
-                      <p className="text-xs text-gray-400 mt-1">Try a different customer name.</p>
+                      <p className="text-sm font-medium text-gray-500">No orders match your filters</p>
+                      <p className="text-xs text-gray-400 mt-1">Try adjusting your search or filters.</p>
                     </>
                   )}
                 </TableCell>
@@ -296,18 +276,17 @@ export function DailyTransactionsTable({
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
-      {/* Pagination controls — only shown when there are rows */}
       {totalCount > 0 && (
         <div className="mt-3 flex items-center justify-between gap-4">
-          {/* Page size selector */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400 whitespace-nowrap">Rows per page</span>
             <Select
               value={String(pageSize)}
-              onValueChange={(value) => {
-                if (value) navigate({ pageSize: Number(value) as typeof pageSize, page: 1 })
+              onValueChange={(value: string | null) => {
+                if (value) navigate({ pageSize: Number(value) as PageSize, page: 1 })
               }}
             >
               <SelectTrigger size="sm" className="w-16 text-xs text-gray-600">
@@ -315,7 +294,7 @@ export function DailyTransactionsTable({
               </SelectTrigger>
               <SelectContent>
                 {PAGE_SIZE_OPTIONS.map((size) => (
-                  <SelectItem key={size} value={String(size)}>
+                  <SelectItem key={size} value={String(size)} label={String(size)}>
                     {size}
                   </SelectItem>
                 ))}
@@ -323,7 +302,6 @@ export function DailyTransactionsTable({
             </Select>
           </div>
 
-          {/* Page indicator + navigation */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400 tabular-nums whitespace-nowrap">
               Page {pageCount === 0 ? 0 : page} of {pageCount}
@@ -333,7 +311,7 @@ export function DailyTransactionsTable({
                 variant="outline"
                 size="icon-sm"
                 onClick={() => navigate({ page: page - 1 })}
-                disabled={!canPrevious || isPending}
+                disabled={!canPrevious || isLoading}
                 aria-label="Previous page"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
@@ -342,7 +320,7 @@ export function DailyTransactionsTable({
                 variant="outline"
                 size="icon-sm"
                 onClick={() => navigate({ page: page + 1 })}
-                disabled={!canNext || isPending}
+                disabled={!canNext || isLoading}
                 aria-label="Next page"
               >
                 <ChevronRight className="h-3.5 w-3.5" />

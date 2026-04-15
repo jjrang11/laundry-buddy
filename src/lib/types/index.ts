@@ -16,6 +16,7 @@ export interface AdditionalCharge {
 export interface OrderCharge {
   id: string
   order_id: string
+  charge_id?: string | null
   charge_name: string
   charge_amount: number
   created_at: string
@@ -42,7 +43,9 @@ export interface Order {
 export interface Shop {
   id: string
   name: string
+  display_name: string
   created_at: string
+  is_suspended: boolean
 }
 
 export interface ShopBranding {

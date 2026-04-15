@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { Store, DollarSign, Users, KeyRound } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -106,6 +107,16 @@ export function SettingsTabs({
   const router = useRouter()
   const pathname = usePathname()
 
+  const [orientation, setOrientation] = useState<'vertical' | 'horizontal'>('vertical')
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)')
+    setOrientation(mq.matches ? 'vertical' : 'horizontal')
+    const handler = (e: MediaQueryListEvent) => setOrientation(e.matches ? 'vertical' : 'horizontal')
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
   const rawTab = searchParams.get('tab')
   const validIds = role === 'admin'
     ? ['account', 'shop-settings', 'pricing', 'team']
@@ -124,12 +135,12 @@ export function SettingsTabs({
 
   return (
     <Tabs
-      orientation="vertical"
+      orientation={orientation}
       value={activeTab}
       onValueChange={handleTabChange}
-      className={cn('gap-0 rounded-xl border border-gray-200 bg-white overflow-hidden min-h-[500px]')}
+      className={cn('gap-0 rounded-xl border border-gray-200 bg-white overflow-hidden md:min-h-[500px]')}
     >
-      <TabsList className="w-52 h-auto self-stretch rounded-none border-r border-gray-100 bg-gray-50/50 p-3 gap-1">
+      <TabsList className="w-full md:w-52 h-auto self-stretch rounded-none border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50/50 p-2 md:p-3 gap-1 overflow-x-auto">
         {ACCOUNT_TABS.map((tab) => (
           <TabsTrigger key={tab.id} value={tab.id}>
             <tab.icon />
@@ -144,7 +155,7 @@ export function SettingsTabs({
         ))}
       </TabsList>
 
-      <TabsContent value="account" className="p-8">
+      <TabsContent value="account" className="p-4 md:p-8">
         <SectionHeader
           title="Change Password"
           description="Update your account password. You'll need your current password to confirm."
@@ -153,7 +164,7 @@ export function SettingsTabs({
       </TabsContent>
 
       {role === 'admin' && <>
-        <TabsContent value="shop-settings" className="p-8">
+        <TabsContent value="shop-settings" className="p-4 md:p-8">
           <SectionHeader
             title="Shop Branding"
             description="Customize your shop's name and logo. Displayed in the dashboard header."

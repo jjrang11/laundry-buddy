@@ -8,10 +8,6 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/dashboard";
 
-  console.log("searchParams ", searchParams);
-  console.log("origin ", origin);
-  console.log("code ", code);
-
   if (code) {
     const successResponse = NextResponse.redirect(`${origin}${next}`);
 

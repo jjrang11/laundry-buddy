@@ -18,7 +18,7 @@ function SkeletonCard() {
   )
 }
 
-function SkeletonColumn({ status }: { status: string }) {
+function SkeletonColumn() {
   return (
     <div className="w-[272px] shrink-0 flex flex-col gap-3 h-full">
       <div className="flex items-center gap-2">
@@ -37,7 +37,7 @@ export default function DashboardLoading() {
   return (
     <div className="flex gap-4 h-full overflow-x-auto px-4 pb-4 pt-4">
       {ORDER_STATUSES.map((status) => (
-        <SkeletonColumn key={status} status={status} />
+        <SkeletonColumn key={status} />
       ))}
     </div>
   )

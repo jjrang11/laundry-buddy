@@ -7,6 +7,7 @@ import { getShopBranding } from '@/features/settings/branding.actions'
 import { getTeamMembers } from '@/features/settings/shop.actions'
 import { SettingsTabs } from '@/features/settings/SettingsTabs'
 import { Skeleton } from '@/components/ui/skeleton'
+import type { AdditionalCharge, TeamMember } from '@/lib/types'
 
 function SettingsTabsSkeleton() {
   return (
@@ -43,7 +44,7 @@ export default async function SettingsPage() {
         getShopBranding(),
         getTeamMembers(),
       ])
-    : ([0, [], { shop_name: null, logo_url: null }, []] as const)
+    : ([0, [], { shop_name: null, logo_url: null }, []] as [number, AdditionalCharge[], { shop_name: null; logo_url: null }, TeamMember[]])
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">

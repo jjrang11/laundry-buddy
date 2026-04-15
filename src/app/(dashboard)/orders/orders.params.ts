@@ -9,6 +9,8 @@ export type OrderTypeFilter = (typeof ORDER_TYPE_FILTERS)[number];
 const VALID_STATUS_FILTERS = ["all", ...ORDER_STATUSES] as const;
 type StatusFilter = (typeof VALID_STATUS_FILTERS)[number];
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 export interface OrdersParams {
   page: number; // 1-based
   pageSize: PageSize;
@@ -16,6 +18,8 @@ export interface OrdersParams {
   status: string; // 'all' or an exact ORDER_STATUSES value
   type: OrderTypeFilter;
   showDeleted: boolean;
+  startDate: string | null; // YYYY-MM-DD or null (no filter)
+  endDate: string | null;   // YYYY-MM-DD or null (no filter)
 }
 
 export const DEFAULT_ORDERS_PARAMS: OrdersParams = {
@@ -25,6 +29,8 @@ export const DEFAULT_ORDERS_PARAMS: OrdersParams = {
   status: "all",
   type: "all",
   showDeleted: false,
+  startDate: null,
+  endDate: null,
 };
 
 /**
@@ -64,5 +70,11 @@ export function parseOrdersParams(
 
   const showDeleted = raw.showDeleted === "true";
 
-  return { page, pageSize, search, status, type, showDeleted };
+  const rawStart = String(raw.startDate ?? "");
+  const startDate = DATE_RE.test(rawStart) ? rawStart : null;
+
+  const rawEnd = String(raw.endDate ?? "");
+  const endDate = DATE_RE.test(rawEnd) ? rawEnd : null;
+
+  return { page, pageSize, search, status, type, showDeleted, startDate, endDate };
 }

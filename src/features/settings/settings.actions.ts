@@ -2,15 +2,19 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { getUserRole } from '@/lib/auth-utils'
+import { getUserRole, getUserShopId } from '@/lib/auth-utils'
 
 export type SettingsActionState = { error: string } | { success: true } | null
 
 export async function getPricePerKg(): Promise<number> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const shopId = getUserShopId(user)
+  if (!shopId) return 0
   const { data } = await supabase
     .from('settings')
     .select('price_per_kg')
+    .eq('shop_id', shopId)
     .single()
   return data?.price_per_kg ?? 0
 }
@@ -24,6 +28,8 @@ export async function updatePricePerKg(
   if (!user) return { error: 'Unauthorized.' }
   const role = getUserRole(user)
   if (role !== 'admin') return { error: 'Only admins can perform this action.' }
+  const shopId = getUserShopId(user)
+  if (!shopId) return { error: 'Not associated with a shop.' }
 
   const raw = formData.get('price_per_kg') as string
   const price = parseFloat(raw)
@@ -35,7 +41,7 @@ export async function updatePricePerKg(
   const { error } = await supabase
     .from('settings')
     .update({ price_per_kg: price })
-    .not('id', 'is', null)
+    .eq('shop_id', shopId)
 
   if (error) {
     console.error('[updatePricePerKg]', error)

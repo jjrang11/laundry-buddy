@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { format } from 'date-fns'
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useCallback, useTransition } from 'react'
+import { format, parseISO } from 'date-fns'
+import { Search, ChevronLeft, ChevronRight, CalendarIcon, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,11 +12,17 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
 import { OrderModal } from '@/features/orders/OrderModal'
+import { OrdersPDFDownload } from '@/features/orders/OrdersPDFDownload'
 import {
   ORDER_STATUSES,
   STATUS_COLORS,
-  type OrderStatus,
 } from '@/lib/constants/order-statuses'
 import { formatCurrency, computeGrandTotal } from '@/lib/utils'
 import { PAGE_SIZE_OPTIONS, type OrdersParams } from './orders.params'
@@ -25,18 +31,25 @@ import type { UserRole } from '@/lib/auth-utils'
 import { cn } from '@/lib/utils'
 import { useTableNavigation } from '@/lib/hooks/useTableNavigation'
 import { useDebouncedSearch } from '@/lib/hooks/useDebouncedSearch'
+import { useRouter, usePathname } from 'next/navigation'
 
 interface OrdersTableProps {
   orders: Order[]
   totalCount: number
   ordersParams: OrdersParams
   userRole: UserRole
+  shopName: string
 }
 
-export function OrdersTable({ orders, totalCount, ordersParams, userRole }: OrdersTableProps) {
-  const { page, pageSize, search, status, type, showDeleted } = ordersParams
+export function OrdersTable({ orders, totalCount, ordersParams, userRole, shopName }: OrdersTableProps) {
+  const { page, pageSize, search, status, type, showDeleted, startDate, endDate } = ordersParams
   const { navigate, isPending } = useTableNavigation()
+  const router = useRouter()
+  const pathname = usePathname()
+  const [, startResetTransition] = useTransition()
   const [editOrder, setEditOrder] = useState<Order | null>(null)
+  const [startOpen, setStartOpen] = useState(false)
+  const [endOpen, setEndOpen] = useState(false)
 
   const handleSearchCommit = useCallback(
     (val: string) => navigate({ search: val, page: 1 }),
@@ -54,58 +67,148 @@ export function OrdersTable({ orders, totalCount, ordersParams, userRole }: Orde
   const rangeStart = totalCount === 0 ? 0 : (page - 1) * pageSize + 1
   const rangeEnd = Math.min(page * pageSize, totalCount)
 
-  const hasActiveFilters = search !== '' || status !== 'all' || type !== 'all' || showDeleted
+  const hasActiveFilters =
+    search !== '' || status !== 'all' || type !== 'all' || showDeleted ||
+    startDate !== null || endDate !== null
+
+  const handleReset = useCallback(() => {
+    startResetTransition(() => { router.push(pathname) })
+  }, [router, pathname])
+
+  const statusLabel = status === 'all' ? 'All statuses' : status
+  const typeLabel = type === 'all' ? 'All types' : type === 'pickup' ? 'Pickup' : 'Walk-in'
 
   return (
     <>
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-          <Input
-            placeholder="Search by customer name..."
-            className="pl-8 h-8 text-sm"
-            value={searchValue}
-            onChange={(e) => handleSearchChange(e.target.value)}
-          />
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-gray-100 justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+
+          {/* Start Date */}
+          <Popover open={startOpen} onOpenChange={setStartOpen}>
+            <PopoverTrigger className="flex items-center gap-1.5 px-3 h-8 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap">
+              <CalendarIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+              {startDate ? format(parseISO(startDate), 'MMM d, yyyy') : 'Start date'}
+            </PopoverTrigger>
+            <PopoverContent side="bottom" align="start" sideOffset={4}>
+              <p className="text-xs text-gray-500 font-medium mb-2 uppercase tracking-wide px-1">Start date</p>
+              <Calendar
+                mode="single"
+                selected={startDate ? parseISO(startDate) : undefined}
+                onSelect={(date) => {
+                  setStartOpen(false)
+                  navigate({ startDate: date ? format(date, 'yyyy-MM-dd') : undefined, page: 1 })
+                }}
+                disabled={(d) => d > new Date()}
+                initialFocus
+              />
+              {startDate && (
+                <button
+                  onClick={() => { setStartOpen(false); navigate({ startDate: undefined, page: 1 }) }}
+                  className="mt-1 w-full text-xs text-gray-400 hover:text-gray-600 py-1"
+                >
+                  Clear
+                </button>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          <span className="text-xs text-gray-400">to</span>
+
+          {/* End Date */}
+          <Popover open={endOpen} onOpenChange={setEndOpen}>
+            <PopoverTrigger className="flex items-center gap-1.5 px-3 h-8 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap">
+              <CalendarIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+              {endDate ? format(parseISO(endDate), 'MMM d, yyyy') : 'End date'}
+            </PopoverTrigger>
+            <PopoverContent side="bottom" align="start" sideOffset={4}>
+              <p className="text-xs text-gray-500 font-medium mb-2 uppercase tracking-wide px-1">End date</p>
+              <Calendar
+                mode="single"
+                selected={endDate ? parseISO(endDate) : undefined}
+                onSelect={(date) => {
+                  setEndOpen(false)
+                  navigate({ endDate: date ? format(date, 'yyyy-MM-dd') : undefined, page: 1 })
+                }}
+                disabled={(d) => d > new Date()}
+                initialFocus
+              />
+              {endDate && (
+                <button
+                  onClick={() => { setEndOpen(false); navigate({ endDate: undefined, page: 1 }) }}
+                  className="mt-1 w-full text-xs text-gray-400 hover:text-gray-600 py-1"
+                >
+                  Clear
+                </button>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          <div className="w-px h-5 bg-gray-200 mx-1" />
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+            <Input
+              placeholder="Search customer..."
+              className="pl-8 h-8 text-sm w-full sm:w-44"
+              value={searchValue}
+              onChange={(e) => handleSearchChange(e.target.value)}
+            />
+          </div>
+
+          {/* Status */}
+          <Select value={status} onValueChange={(val) => navigate({ status: val, page: 1 })}>
+            <SelectTrigger className="w-full sm:w-44 h-8 text-sm">
+              <SelectValue>{statusLabel}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {ORDER_STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Type */}
+          <Select value={type} onValueChange={(val) => navigate({ type: val as OrdersParams['type'], page: 1 })}>
+            <SelectTrigger className="w-full sm:w-32 h-8 text-sm">
+              <SelectValue>{typeLabel}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="pickup">Pickup</SelectItem>
+              <SelectItem value="walkin">Walk-in</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Show deleted */}
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={showDeleted}
+              onChange={(e) => navigate({ showDeleted: e.target.checked || undefined, page: 1 })}
+              className="h-3.5 w-3.5 rounded border-gray-300 accent-gray-800 cursor-pointer"
+            />
+            <span className="text-sm text-gray-600 whitespace-nowrap">Show deleted</span>
+          </label>
+
+          {/* Reset */}
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+              className="h-8 px-2.5 text-xs text-gray-500 hover:text-gray-900 gap-1"
+            >
+              <X className="h-3.5 w-3.5" />
+              Reset
+            </Button>
+          )}
         </div>
-        <Select
-          value={status}
-          onValueChange={(val) => navigate({ status: val, page: 1 })}
-        >
-          <SelectTrigger className="w-44 h-8 text-sm">
-            <SelectValue placeholder="All statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            {ORDER_STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={type}
-          onValueChange={(val) => navigate({ type: val as OrdersParams['type'], page: 1 })}
-        >
-          <SelectTrigger className="w-36 h-8 text-sm">
-            <SelectValue placeholder="All types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            <SelectItem value="pickup">Pickup</SelectItem>
-            <SelectItem value="walkin">Walk-in</SelectItem>
-          </SelectContent>
-        </Select>
-        <label className="flex items-center gap-1.5 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={showDeleted}
-            onChange={(e) => navigate({ showDeleted: e.target.checked || undefined, page: 1 })}
-            className="h-3.5 w-3.5 rounded border-gray-300 accent-gray-800 cursor-pointer"
-          />
-          <span className="text-sm text-gray-600 whitespace-nowrap">Show deleted</span>
-        </label>
+
+        <OrdersPDFDownload params={ordersParams} shopName={shopName} />
       </div>
 
       {/* Table */}
@@ -119,8 +222,8 @@ export function OrdersTable({ orders, totalCount, ordersParams, userRole }: Orde
             <tr className="border-b border-gray-200 bg-gray-50">
               <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Customer</th>
               <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Type</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Weight</th>
+              <th className="hidden sm:table-cell px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Type</th>
+              <th className="hidden sm:table-cell px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Weight</th>
               <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Total</th>
               <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Created</th>
             </tr>
@@ -158,10 +261,10 @@ export function OrdersTable({ orders, totalCount, ordersParams, userRole }: Orde
                     </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">
+                  <td className="hidden sm:table-cell px-4 py-3 text-gray-600">
                     {order.order_type === 'pickup' ? 'Pickup' : 'Walk-in'}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-gray-600">
+                  <td className="hidden sm:table-cell px-4 py-3 text-right tabular-nums text-gray-600">
                     {order.weight != null ? `${order.weight} kg` : '—'}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums font-medium text-gray-900">
@@ -196,7 +299,7 @@ export function OrdersTable({ orders, totalCount, ordersParams, userRole }: Orde
 
       {/* Pagination */}
       {totalCount > 0 && (
-        <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between gap-4">
+        <div className="px-4 py-3 border-t border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           {/* Result count + page size */}
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-400 tabular-nums">
