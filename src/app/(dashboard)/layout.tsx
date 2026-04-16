@@ -6,6 +6,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service-role'
 import { DashboardHeader } from '@/components/layout/DashboardHeader'
 import { SideNav } from '@/components/layout/SideNav'
 import { MobileNavProvider } from '@/components/layout/MobileNavProvider'
+import { SupabaseRealtimeProvider } from '@/context/SupabaseRealtimeProvider'
 
 export default async function DashboardLayout({
   children,
@@ -49,7 +50,9 @@ export default async function DashboardLayout({
         <DashboardHeader email={user.email ?? ''} role={role} branding={branding} />
         <div className="flex flex-1 overflow-hidden">
           <SideNav role={role} />
-          <main className="flex-1 overflow-y-auto">{children}</main>
+          <main className="flex-1 overflow-y-auto">
+            <SupabaseRealtimeProvider>{children}</SupabaseRealtimeProvider>
+          </main>
         </div>
       </MobileNavProvider>
     </div>

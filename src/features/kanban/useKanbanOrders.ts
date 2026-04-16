@@ -2,6 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRealtimeReady } from "@/context/SupabaseRealtimeProvider";
+import type {
+  RealtimePostgresInsertPayload,
+  RealtimePostgresUpdatePayload,
+  RealtimePostgresDeletePayload,
+} from "@supabase/realtime-js";
 import type { Order } from "@/lib/types";
 import type { OrderStatus } from "@/lib/constants/order-statuses";
 
@@ -33,6 +39,7 @@ async function notifyIfHidden(order: Order) {
 export type RealtimeStatus = "connecting" | "connected" | "error";
 
 export function useKanbanOrders(initialOrders: Order[], shopId: string) {
+  const realtimeReady = useRealtimeReady();
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
   const [realtimeStatus, setRealtimeStatus] =
@@ -52,41 +59,17 @@ export function useKanbanOrders(initialOrders: Order[], shopId: string) {
   }, [initialOrders]);
 
   useEffect(() => {
+    // Auth has been primed by SupabaseRealtimeProvider (getSession → optional
+    // refreshSession → setAuth). Wait for that to complete before subscribing
+    // so the channel join carries a valid access_token and the server can
+    // resolve get_my_shop_id() — the root cause of TIMED_OUT on first load.
+    if (!realtimeReady) return;
+
     const supabase = createClient();
     let cancelled = false;
     let channelRef: ReturnType<typeof supabase.channel> | null = null;
 
     async function setup() {
-      // Prime the realtime auth token before subscribing.
-      //
-      // Phoenix socket onConnOpen() calls flushSendBuffer() BEFORE it fires
-      // triggerStateCallbacks("open"), so the channel join message leaves the
-      // client before our onOpen handler runs. If accessTokenValue is null the
-      // join carries no token, get_my_shop_id() returns null, and the server
-      // never routes postgres_changes events to this subscription.
-      //
-      // We call setAuth() here WITHOUT an explicit token so it uses the
-      // accessToken callback (_getAccessToken → auth.getSession()), which:
-      //   1. Sets accessTokenValue so the join payload includes access_token.
-      //   2. Keeps _manuallySetToken = false, preserving the post-subscription
-      //      setAuth() call in the channel's 'ok' receive handler — that call
-      //      is what actually causes the server to begin routing events.
-      //
-      // Passing an explicit token would set _manuallySetToken = true, silencing
-      // the 'ok'-handler setAuth() and breaking server-side event delivery even
-      // though SUBSCRIBED fires successfully.
-      //
-      // Only refresh when shop_id is absent from the cached JWT — @supabase/ssr's
-      // internal listener reacts to TOKEN_REFRESHED and disrupts in-flight UI
-      // actions (e.g. form dialogs won't close) if called unconditionally.
-      let { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.user_metadata?.shop_id) {
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        session = refreshed.session;
-      }
-      if (session) {
-        await supabase.realtime.setAuth(); // no token — uses callback, keeps _manuallySetToken false
-      }
       if (cancelled) return;
 
       const channel = supabase
@@ -99,9 +82,9 @@ export function useKanbanOrders(initialOrders: Order[], shopId: string) {
             table: "orders",
             filter: `shop_id=eq.${shopId}`,
           },
-          async (payload) => {
+          async (payload: RealtimePostgresInsertPayload<Record<string, unknown>>) => {
             const partial = {
-              ...(payload.new as Order),
+              ...(payload.new as unknown as Order),
               order_charges: [] as Order["order_charges"],
             };
 
@@ -149,8 +132,8 @@ export function useKanbanOrders(initialOrders: Order[], shopId: string) {
             table: "orders",
             filter: `shop_id=eq.${shopId}`,
           },
-          async (payload) => {
-            const partial = payload.new as Order;
+          async (payload: RealtimePostgresUpdatePayload<Record<string, unknown>>) => {
+            const partial = payload.new as unknown as Order;
 
             // Immediately apply the change — spread keeps existing order_charges intact
             // (payload.new never includes order_charges since it's a separate table)
@@ -186,12 +169,12 @@ export function useKanbanOrders(initialOrders: Order[], shopId: string) {
         .on(
           "postgres_changes",
           { event: "DELETE", schema: "public", table: "orders" },
-          (payload) => {
+          (payload: RealtimePostgresDeletePayload<Record<string, unknown>>) => {
             const deleted = payload.old as { id: string };
             setOrders((prev) => prev.filter((o) => o.id !== deleted.id));
           }
         )
-        .subscribe((status) => {
+        .subscribe((status: string) => {
           if (status === "SUBSCRIBED") {
             setRealtimeStatus("connected");
             // Successful connection — reset backoff counter and cancel any pending retry
@@ -233,7 +216,7 @@ export function useKanbanOrders(initialOrders: Order[], shopId: string) {
       }
       timeouts.forEach(clearTimeout);
     };
-  }, [shopId, retryKey]); // retryKey forces re-subscription after a failed channel
+  }, [shopId, retryKey, realtimeReady]); // realtimeReady gates first subscribe; retryKey forces re-subscription after failure
 
   function clearNewHighlight(id: string) {
     const t = timeoutsRef.current.get(id);

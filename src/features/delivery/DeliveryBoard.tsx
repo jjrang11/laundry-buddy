@@ -4,8 +4,14 @@ import { useState, useTransition, useEffect, useRef } from 'react'
 import { CheckCircle2, Package, Phone, MapPin, Scale, Truck, PackageCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { useRealtimeReady } from '@/context/SupabaseRealtimeProvider'
 import { updateOrderStatus, bulkUpdateOrderStatus } from '@/features/orders/orders.actions'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import type {
+  RealtimePostgresInsertPayload,
+  RealtimePostgresUpdatePayload,
+  RealtimePostgresDeletePayload,
+} from '@supabase/realtime-js'
 import type { Order } from '@/lib/types'
 
 const DELIVERY_STATUSES = new Set(['Ready for Delivery', 'Out for Delivery'])
@@ -160,6 +166,7 @@ function Section({
 type BulkTarget = 'ready' | 'out'
 
 export function DeliveryBoard({ readyOrders, outOrders, shopId }: DeliveryBoardProps) {
+  const realtimeReady = useRealtimeReady()
   const [, startTransition] = useTransition()
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [bulkPending, setBulkPending] = useState<BulkTarget | null>(null)
@@ -178,25 +185,15 @@ export function DeliveryBoard({ readyOrders, outOrders, shopId }: DeliveryBoardP
 
   // Supabase real-time subscription
   useEffect(() => {
+    // Auth has been primed by SupabaseRealtimeProvider — wait for it before
+    // subscribing so the channel join carries a valid token (see provider).
+    if (!realtimeReady) return
+
     const supabase = createClient()
     let cancelled = false
     let channelRef: ReturnType<typeof supabase.channel> | null = null
 
     async function setup() {
-      // Prime the realtime auth token before subscribing.
-      // See useKanbanOrders.ts setup() for the full rationale.
-      // Use setAuth() without explicit token (callback-based) to keep
-      // _manuallySetToken = false so the post-subscription setAuth() in the
-      // channel 'ok' handler still fires — that is what causes the server to
-      // route postgres_changes events.
-      let { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user?.user_metadata?.shop_id) {
-        const { data: refreshed } = await supabase.auth.refreshSession()
-        session = refreshed.session
-      }
-      if (session) {
-        await supabase.realtime.setAuth() // no token — uses callback, keeps _manuallySetToken false
-      }
       if (cancelled) return
 
       const channel = supabase
@@ -204,8 +201,8 @@ export function DeliveryBoard({ readyOrders, outOrders, shopId }: DeliveryBoardP
         .on(
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'orders', filter: `shop_id=eq.${shopId}` },
-          (payload) => {
-            const incoming = payload.new as Order
+          (payload: RealtimePostgresInsertPayload<Record<string, unknown>>) => {
+            const incoming = payload.new as unknown as Order
             // Guard both status and soft-delete — previously handled by .is('deleted_at', null) in the SELECT
             if (!DELIVERY_STATUSES.has(incoming.status) || incoming.deleted_at) return
             setOrders((prev) =>
@@ -216,8 +213,8 @@ export function DeliveryBoard({ readyOrders, outOrders, shopId }: DeliveryBoardP
         .on(
           'postgres_changes',
           { event: 'UPDATE', schema: 'public', table: 'orders', filter: `shop_id=eq.${shopId}` },
-          (payload) => {
-            const updated = payload.new as Order
+          (payload: RealtimePostgresUpdatePayload<Record<string, unknown>>) => {
+            const updated = payload.new as unknown as Order
             if (!updated || updated.deleted_at || !DELIVERY_STATUSES.has(updated.status)) {
               setOrders((prev) => prev.filter((o) => o.id !== updated?.id))
               return
@@ -233,12 +230,12 @@ export function DeliveryBoard({ readyOrders, outOrders, shopId }: DeliveryBoardP
         .on(
           'postgres_changes',
           { event: 'DELETE', schema: 'public', table: 'orders' },
-          (payload) => {
+          (payload: RealtimePostgresDeletePayload<Record<string, unknown>>) => {
             const deleted = payload.old as { id: string }
             setOrders((prev) => prev.filter((o) => o.id !== deleted.id))
           }
         )
-        .subscribe((status) => {
+        .subscribe((status: string) => {
           if (status === 'SUBSCRIBED') {
             // Successful connection — reset backoff counter and cancel any pending retry
             retryCountRef.current = 0
@@ -275,7 +272,7 @@ export function DeliveryBoard({ readyOrders, outOrders, shopId }: DeliveryBoardP
         retryTimeoutRef.current = null
       }
     }
-  }, [shopId, retryKey]) // retryKey forces re-subscription after a failed channel
+  }, [shopId, retryKey, realtimeReady]) // realtimeReady gates first subscribe; retryKey forces re-subscription after failure
 
   const liveReady = orders.filter((o) => o.status === 'Ready for Delivery')
   const liveOut = orders.filter((o) => o.status === 'Out for Delivery')
